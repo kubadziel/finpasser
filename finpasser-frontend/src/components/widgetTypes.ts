@@ -1,13 +1,17 @@
-export type WidgetSize = number;
+import type { FC } from "react";
+import type { CardProps } from "@mui/material";
 
 export type Widget = {
     id: string;
-    title: string;
-    value?: string;
-    description?: string;
-    color?: "primary" | "error" | "secondary";
-    size?: WidgetSize;
     rowSpan?: number;
     colSpan?: number;
-    type?: "upload";
+};
+
+export type WidgetContentProps = {
+    isEditMode: boolean;
+    cardProps?: CardProps;
+};
+
+export type WidgetDefinition = Widget & {
+    component: FC<WidgetContentProps>;
 };

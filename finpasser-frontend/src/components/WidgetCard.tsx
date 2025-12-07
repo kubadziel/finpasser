@@ -1,24 +1,22 @@
 import React from "react";
-import {
-    Card,
-    CardContent,
-    Stack,
-    Typography,
-    Box,
-    CardProps,
-} from "@mui/material";
-import FileDropZone from "./FileDropZone";
-import { Widget } from "./widgetTypes";
+import { Card, CardContent, Stack, Typography, Box, CardProps } from "@mui/material";
 
 type WidgetCardProps = {
-    widget: Widget;
+    title: string;
+    value?: string;
+    description?: string;
+    color?: "primary" | "error" | "secondary";
     isEditMode: boolean;
+    children?: React.ReactNode;
     dragProps?: React.HTMLAttributes<HTMLDivElement>;
     cardProps?: CardProps;
 };
 
 const WidgetCard = React.forwardRef<HTMLDivElement, WidgetCardProps>(
-    ({ widget, isEditMode, dragProps, cardProps }, ref) => {
+    (
+        { title, value, description, color, isEditMode, children, dragProps, cardProps },
+        ref
+    ) => {
         return (
             <Card
                 ref={ref}
@@ -43,42 +41,23 @@ const WidgetCard = React.forwardRef<HTMLDivElement, WidgetCardProps>(
                     >
                         <Box>
                             <Typography variant="h6" gutterBottom>
-                                {widget.title}
+                                {title}
                             </Typography>
-                            {widget.value && (
-                                <Typography
-                                    variant="h3"
-                                    color={widget.color ?? "primary"}
-                                >
-                                    {widget.value}
+                            {value && (
+                                <Typography variant="h3" color={color ?? "primary"}>
+                                    {value}
                                 </Typography>
                             )}
-                            {widget.description && (
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    {widget.description}
+                            {description && (
+                                <Typography variant="body2" color="text.secondary">
+                                    {description}
                                 </Typography>
                             )}
                         </Box>
                     </Stack>
 
-                    {widget.type === "upload" && (
-                        <Stack sx={{ mt: 2 }}>
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 1 }}
-                            >
-                                Drag & drop a pain.001 XML file or click to
-                                browse.
-                            </Typography>
-                            <FileDropZone />
-                        </Stack>
-                    )}
+                    {children ? <Box sx={{ mt: 2 }}>{children}</Box> : null}
                 </CardContent>
-
             </Card>
         );
     }

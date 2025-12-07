@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Typography, Container, Stack, Button, Box } from "@mui/material";
 import {
     DndContext,
+    DragCancelEvent,
     DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
     MouseSensor,
     TouchSensor,
     useSensor,
@@ -15,98 +18,94 @@ import {
     useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import WidgetCard from "../components/WidgetCard";
-import { Widget } from "../components/widgetTypes";
+import type { Widget, WidgetDefinition } from "../components/widgetTypes";
+import { widgetDefinitions, widgetDefinitionMap } from "../widgets";
 
 const LAYOUT_STORAGE_KEY = "finpasser-dashboard-layout";
 const STORAGE_MODE = "session" as "session" | "backend"; // backend mode planned for future
+const GRID_COLUMNS = 4;
 
-const defaultWidgets: Widget[] = [
-    {
-        id: "pending",
-        title: "Pending Messages",
-        value: "12",
-        description: "Awaiting processing",
-        color: "primary",
-    },
-    {
-        id: "processed",
-        title: "Processed Today",
-        value: "34",
-        description: "Successfully routed",
-        color: "secondary",
-    },
-    {
-        id: "alerts",
-        title: "Alerts",
-        value: "2",
-        description: "Requires review",
-        color: "error",
-    },
-    {
-        id: "throughput",
-        title: "Daily Throughput",
-        value: "128",
-        description: "Files processed in 24h",
-        color: "primary",
-    },
-    {
-        id: "latency",
-        title: "Avg Latency",
-        value: "820ms",
-        description: "Upload to ack",
-        color: "secondary",
-    },
-    {
-        id: "failures",
-        title: "Failed Messages",
-        value: "3",
-        description: "Last 24 hours",
-        color: "error",
-    },
-    {
-        id: "kafka",
-        title: "Kafka Lag",
-        value: "12",
-        description: "Messages waiting",
-        color: "primary",
-    },
-    {
-        id: "storage",
-        title: "Storage Usage",
-        value: "72%",
-        description: "MinIO bucket",
-        color: "secondary",
-    },
-    {
-        id: "sla",
-        title: "SLA Compliance",
-        value: "99.4%",
-        description: "Past 7 days",
-        color: "primary",
-    },
-    {
-        id: "notifications",
-        title: "Notifications",
-        value: "5",
-        description: "Pending acknowledgements",
-        color: "secondary",
-    },
-    {
-        id: "uploader",
-        title: "Upload XML Message",
-        description: "",
-        rowSpan: 2,
-        colSpan: 1,
-        type: "upload",
-    },
-];
+const defaultWidgets: Widget[] = widgetDefinitions.map(({ id, rowSpan, colSpan }) => ({
+    id,
+    rowSpan,
+    colSpan,
+}));
+
+const clampSpan = (value?: number) =>
+    Math.min(GRID_COLUMNS, Math.max(1, value ?? 1));
+
+const getClampedSpans = (widget: Widget) => ({
+    colSpan: clampSpan(widget.colSpan),
+    rowSpan: clampSpan(widget.rowSpan),
+});
+
+const calculateGridRows = (layout: Widget[], columns = GRID_COLUMNS) => {
+    const occupancy: boolean[][] = [];
+    let rowsUsed = 0;
+
+    const ensureRows = (row: number) => {
+        for (let i = occupancy.length; i <= row; i++) {
+            occupancy[i] = Array(columns).fill(false);
+        }
+    };
+
+    const canPlace = (
+        startRow: number,
+        startCol: number,
+        rowSpan: number,
+        colSpan: number
+    ) => {
+        for (let r = startRow; r < startRow + rowSpan; r++) {
+            for (let c = startCol; c < startCol + colSpan; c++) {
+                if (occupancy[r]?.[c]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    const occupy = (
+        startRow: number,
+        startCol: number,
+        rowSpan: number,
+        colSpan: number
+    ) => {
+        ensureRows(startRow + rowSpan - 1);
+        for (let r = startRow; r < startRow + rowSpan; r++) {
+            for (let c = startCol; c < startCol + colSpan; c++) {
+                occupancy[r][c] = true;
+            }
+        }
+        rowsUsed = Math.max(rowsUsed, startRow + rowSpan);
+    };
+
+    layout.forEach((widget) => {
+        const { colSpan, rowSpan } = getClampedSpans(widget);
+        let row = 0;
+        let placed = false;
+
+        while (!placed) {
+            ensureRows(row + rowSpan - 1);
+            for (let col = 0; col <= columns - colSpan; col++) {
+                if (canPlace(row, col, rowSpan, colSpan)) {
+                    occupy(row, col, rowSpan, colSpan);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                row += 1;
+            }
+        }
+    });
+
+    return rowsUsed || occupancy.length;
+};
 
 const mergeWithDefaults = (layout: Widget[]): Widget[] => {
-    const defaultsById = new Map(defaultWidgets.map((w) => [w.id, w]));
-
     const orderedLayout = layout.map((storedWidget) => {
-        const defaultWidget = defaultsById.get(storedWidget.id);
+        const defaultWidget = widgetDefinitionMap.get(storedWidget.id);
         if (!defaultWidget) {
             return storedWidget;
         }
@@ -117,9 +116,13 @@ const mergeWithDefaults = (layout: Widget[]): Widget[] => {
         };
     });
 
-    const missingDefaults = defaultWidgets.filter(
-        (widget) => !layout.some((stored) => stored.id === widget.id)
-    );
+    const missingDefaults = widgetDefinitions
+        .filter((widget) => !layout.some((stored) => stored.id === widget.id))
+        .map((widget) => ({
+            id: widget.id,
+            rowSpan: widget.rowSpan,
+            colSpan: widget.colSpan,
+        }));
 
     return [...orderedLayout, ...missingDefaults];
 };
@@ -162,23 +165,29 @@ const persistLayout = async (layout: Widget[]) => {
 
 type SortableTileProps = {
     widget: Widget;
+    definition: WidgetDefinition;
     isEditMode: boolean;
 };
 
-const SortableTile: React.FC<SortableTileProps> = ({ widget, isEditMode }) => {
+const SortableTile: React.FC<SortableTileProps> = ({
+    widget,
+    definition,
+    isEditMode,
+}) => {
     const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
         useSortable({
             id: widget.id,
             disabled: !isEditMode,
         });
 
-    const colSpan = Math.min(4, Math.max(1, widget.colSpan ?? 1));
-    const rowSpan = Math.min(4, Math.max(1, widget.rowSpan ?? 1));
+    const { colSpan, rowSpan } = getClampedSpans(widget);
 
     const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.9 : 1,
+        transform: isDragging ? undefined : CSS.Transform.toString(transform),
+        transition: isDragging
+            ? "transform 160ms cubic-bezier(0.2, 0, 0, 1), opacity 140ms ease"
+            : transition ?? "transform 220ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms ease",
+        opacity: isDragging ? 0.65 : 1,
         gridColumn: `span ${colSpan}`,
         gridRow: `span ${rowSpan}`,
         minHeight: {
@@ -186,7 +195,10 @@ const SortableTile: React.FC<SortableTileProps> = ({ widget, isEditMode }) => {
             md: `${170 * rowSpan}px`,
         },
         cursor: isEditMode ? "grab" : "default",
+        willChange: "transform",
     };
+
+    const TileContent = definition.component;
 
     return (
         <Box
@@ -194,7 +206,7 @@ const SortableTile: React.FC<SortableTileProps> = ({ widget, isEditMode }) => {
             sx={style}
             {...(isEditMode ? { ...attributes, ...listeners } : {})}
         >
-            <WidgetCard widget={widget} isEditMode={isEditMode} />
+            <TileContent isEditMode={isEditMode} />
         </Box>
     );
 };
@@ -203,6 +215,10 @@ export default function Dashboard() {
     const [widgets, setWidgets] = useState<Widget[]>(defaultWidgets);
     const [layoutReady, setLayoutReady] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [activeSize, setActiveSize] = useState<{ width: number; height: number } | null>(
+        null
+    );
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, {
@@ -231,22 +247,66 @@ export default function Dashboard() {
         void persistLayout(widgets);
     }, [widgets, layoutReady]);
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const activeWidget = activeId
+        ? widgets.find((widget) => widget.id === activeId) ?? null
+        : null;
+    const activeDefinition = activeWidget
+        ? widgetDefinitionMap.get(activeWidget.id) ?? null
+        : null;
+    const OverlayComponent = activeDefinition?.component ?? null;
+    const overlaySpans = activeWidget ? getClampedSpans(activeWidget) : null;
+
+    const handleDragStart = (event: DragStartEvent) => {
         if (!isEditMode) return;
+        setActiveId(String(event.active.id));
+        const rect = event.active.rect.current.translated ?? event.active.rect.current.initial;
+        if (rect) {
+            setActiveSize({ width: rect.width, height: rect.height });
+        } else {
+            setActiveSize(null);
+        }
+    };
+
+    const clearActiveDrag = () => {
+        setActiveId(null);
+        setActiveSize(null);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        if (!isEditMode) {
+            clearActiveDrag();
+            return;
+        }
         const { active, over } = event;
+        clearActiveDrag();
         if (!over || active.id === over.id) {
             return;
         }
         setWidgets((items) => {
             const oldIndex = items.findIndex((item) => item.id === active.id);
             const newIndex = items.findIndex((item) => item.id === over.id);
-            return arrayMove(items, oldIndex, newIndex);
+            if (oldIndex === -1 || newIndex === -1) {
+                return items;
+            }
+            const nextLayout = arrayMove(items, oldIndex, newIndex);
+            const currentRows = calculateGridRows(items);
+            const nextRows = calculateGridRows(nextLayout);
+
+            if (nextRows > currentRows) {
+                return items;
+            }
+
+            return nextLayout;
         });
+    };
+
+    const handleDragCancel = (_event: DragCancelEvent) => {
+        clearActiveDrag();
     };
 
     const gridBaseStyles = {
         display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
         gridAutoRows: { xs: "120px", md: "170px" },
         gridAutoFlow: "row dense",
         gap: 2,
@@ -257,14 +317,14 @@ export default function Dashboard() {
         bgcolor: "background.paper",
     };
 
-const gridHighlightStyles = isEditMode
-    ? {
-          border: "1px dashed",
-          borderColor: "primary.main",
-          backgroundColor: "rgba(25,118,210,0.04)",
-          boxShadow: "0 0 0 4px rgba(25,118,210,0.08)",
-      }
-    : {};
+    const gridHighlightStyles = isEditMode
+        ? {
+              border: "1px dashed",
+              borderColor: "primary.main",
+              backgroundColor: "rgba(25,118,210,0.04)",
+              boxShadow: "0 0 0 4px rgba(25,118,210,0.08)",
+          }
+        : {};
 
     const handleResetLayout = () => {
         setWidgets((items) =>
@@ -308,7 +368,12 @@ const gridHighlightStyles = isEditMode
                     </Stack>
                 </Stack>
 
-                <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                <DndContext
+                    sensors={sensors}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
+                >
                     <SortableContext
                         items={widgets.map((w) => w.id)}
                         strategy={rectSortingStrategy}
@@ -320,15 +385,50 @@ const gridHighlightStyles = isEditMode
                                 ...gridHighlightStyles,
                             }}
                         >
-                            {widgets.map((widget) => (
-                                <SortableTile
-                                    key={widget.id}
-                                    widget={widget}
-                                    isEditMode={isEditMode}
-                                />
-                            ))}
+                            {widgets.map((widget) => {
+                                const definition = widgetDefinitionMap.get(widget.id);
+                                if (!definition) return null;
+                                return (
+                                    <SortableTile
+                                        key={widget.id}
+                                        widget={widget}
+                                        definition={definition}
+                                        isEditMode={isEditMode}
+                                    />
+                                );
+                            })}
                         </Box>
                     </SortableContext>
+
+                    <DragOverlay
+                        adjustScale={false}
+                        dropAnimation={{
+                            duration: 220,
+                            easing: "cubic-bezier(0.2, 0, 0, 1)",
+                        }}
+                    >
+                        {activeWidget && OverlayComponent ? (
+                            <Box
+                                sx={{
+                                    width: activeSize?.width,
+                                    height:
+                                        activeSize?.height ??
+                                        (overlaySpans
+                                            ? {
+                                                  xs: `${120 * overlaySpans.rowSpan}px`,
+                                                  md: `${170 * overlaySpans.rowSpan}px`,
+                                              }
+                                            : undefined),
+                                    minWidth: 0,
+                                }}
+                            >
+                                <OverlayComponent
+                                    isEditMode
+                                    cardProps={{ sx: { boxShadow: 8 } }}
+                                />
+                            </Box>
+                        ) : null}
+                    </DragOverlay>
                 </DndContext>
             </Container>
         </Box>
