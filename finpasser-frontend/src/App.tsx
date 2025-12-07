@@ -2,7 +2,6 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 import Dashboard from "./pages/Dashboard";
-import UploadPage from "./pages/UploadPage";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
@@ -46,14 +45,6 @@ const AppContent = () => {
                     }
                 />
                 <Route path="/login" element={<LoginPage />} />
-                <Route
-                    path="/upload"
-                    element={
-                        <ProtectedRoute>
-                            <UploadPage />
-                        </ProtectedRoute>
-                    }
-                />
             </Routes>
         </>
     );

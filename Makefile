@@ -43,6 +43,8 @@ help:
 	@echo " Frontend:"
 	@echo " make frontend-dev       - Start Vite dev server"
 	@echo " make frontend-build     - Build Vite frontend"
+	@echo " make frontend-docker-build - Build frontend Docker image"
+	@echo " make frontend-up        - Start/restart only the frontend container"
 	@echo ""
 	@echo " Database:"
 	@echo " make db-router-reset    - Reset Router DB"
@@ -141,6 +143,12 @@ frontend-dev:
 
 frontend-build:
 	cd finpasser-frontend && npm install && npm run build
+
+frontend-docker-build:
+	$(DOCKER_COMPOSE) build frontend
+
+frontend-up: frontend-docker-build
+	$(DOCKER_COMPOSE) up -d frontend
 
 e2e-full:
 	@bash -c 'set -euo pipefail; \
