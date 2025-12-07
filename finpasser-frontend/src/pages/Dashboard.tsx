@@ -14,7 +14,7 @@ export default function Dashboard() {
     return (
         <Container sx={{ mt: 4 }}>
             <Typography variant="h4" gutterBottom>
-                FilePasser Dashboard
+                FinPasser Dashboard
             </Typography>
 
             <Card sx={{ maxWidth: 360 }}>

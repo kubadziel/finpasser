@@ -1,5 +1,5 @@
 ############################################################
-# FILEPASSER ROOT GITIGNORE (MICROSERVICE READY)
+# FINPASSER ROOT GITIGNORE (MICROSERVICE READY)
 ############################################################
 
 ###############################
@@ -63,8 +63,8 @@ Thumbs.db
 **/*.env
 .env.*
 .env.test
-filepasser-frontend/.env.test
-filepasser-frontend/.auth/
+finpasser-frontend/.env.test
+finpasser-frontend/.auth/
 credentials.json
 secrets/
 *.pem
@@ -138,8 +138,8 @@ test-output/
 **/test-output/
 bin/
 build/
-filepasser-frontend/test-results/
-filepasser-frontend/playwright-report/
+finpasser-frontend/test-results/
+finpasser-frontend/playwright-report/
 
 ###############################
 # 11. Python (if scripts used later)
@@ -170,5 +170,5 @@ override.tf.json
 *.orig
 
 ############################################################
-# END OF FILEPASSER MONOREPO IGNORE FILE
+# END OF FINPASSER MONOREPO IGNORE FILE
 ############################################################

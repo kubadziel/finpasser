@@ -1,17 +1,18 @@
 # =======================================================
-#  FILEPASSER MAKEFILE (Router + Uploader + Frontend)
+#  FINPASSER MAKEFILE (Router + Uploader + Frontend)
 # =======================================================
 
 DOCKER_COMPOSE = docker compose
 
-POSTGRES_CONTAINER = filepasser-postgres-1
-MINIO_CONTAINER = filepasser-minio-1
-KAFKA_CONTAINER = filepasser-kafka-1
+POSTGRES_CONTAINER = finpasser-postgres-1
+MINIO_CONTAINER = finpasser-minio-1
+KAFKA_CONTAINER = finpasser-kafka-1
 
 MINIO_ALIAS = local
 MINIO_BUCKET = router-inbound
+PARENT_POM = pom.xml
 
-FRONTEND_DIR = filepasser-frontend
+FRONTEND_DIR = finpasser-frontend
 FRONTEND_E2E_PORT ?= 3000
 UPLOAD_ENDPOINT ?= http://localhost:8081/api/upload
 
@@ -22,7 +23,7 @@ UPLOAD_ENDPOINT ?= http://localhost:8081/api/upload
 # --------------------------------------------
 help:
 	@echo ""
-	@echo " FilePasser - Developer Commands"
+	@echo " FinPasser - Developer Commands"
 	@echo "--------------------------------------------"
 	@echo " make up                 - Start ALL services (backend + frontend + DB + Kafka)"
 	@echo " make down               - Stop all services"
@@ -56,13 +57,13 @@ help:
 # --------------------------------------------
 # DOCKER LIFECYCLE
 # --------------------------------------------
-up:
+up: ensure-parent
 	$(DOCKER_COMPOSE) up --build -d
 
 down:
 	$(DOCKER_COMPOSE) down
 
-rebuild:
+rebuild: ensure-parent
 	$(DOCKER_COMPOSE) down
 	@if [ "$${RUN_TESTS:-0}" = "1" ]; then \
 		echo "Running shared-kafka-events build with tests"; \
@@ -100,7 +101,7 @@ clean:
 # --------------------------------------------
 # BACKEND BUILD
 # --------------------------------------------
-router-build:
+router-build: ensure-parent
 	@if [ "$${RUN_TESTS:-0}" = "1" ]; then \
 		echo "Running router build with tests"; \
 		mvn -f router/pom.xml clean package; \
@@ -108,7 +109,7 @@ router-build:
 		mvn -f router/pom.xml clean package -DskipTests; \
 	fi
 
-uploader-build:
+uploader-build: ensure-parent
 	@if [ "$${RUN_TESTS:-0}" = "1" ]; then \
 		echo "Running uploader build with tests"; \
 		mvn -f uploader/pom.xml clean package; \
@@ -133,13 +134,13 @@ shared-security-build:
 	fi
 
 # --------------------------------------------
-# FRONTEND (filepasser-frontend)
+# FRONTEND (finpasser-frontend)
 # --------------------------------------------
 frontend-dev:
-	cd filepasser-frontend && npm install && npm run dev
+	cd finpasser-frontend && npm install && npm run dev
 
 frontend-build:
-	cd filepasser-frontend && npm install && npm run build
+	cd finpasser-frontend && npm install && npm run build
 
 e2e-full:
 	@bash -c 'set -euo pipefail; \
@@ -160,8 +161,8 @@ e2e-full:
 	VITE_PORT=$(FRONTEND_E2E_PORT) \
 	VITE_UPLOAD_ENDPOINT=$(UPLOAD_ENDPOINT) \
 	VITE_KEYCLOAK_URL=http://keycloak:8085 \
-	VITE_KEYCLOAK_REALM=filepasser \
-	VITE_KEYCLOAK_CLIENT_ID=filepasser-frontend \
+	VITE_KEYCLOAK_REALM=finpasser \
+	VITE_KEYCLOAK_CLIENT_ID=finpasser-frontend \
 	npm run dev -- --host 0.0.0.0 >$$LOG_FILE 2>&1 & \
 	DEV_PID=$$!; \
 	popd >/dev/null; \
@@ -183,8 +184,8 @@ e2e-full:
 	E2E_REAL_BACKEND=1 \
 	UPLOAD_ENDPOINT=$(UPLOAD_ENDPOINT) \
 	KEYCLOAK_PUBLIC_URL=http://keycloak:8085 \
-	KEYCLOAK_REALM=filepasser \
-	KEYCLOAK_CLIENT_ID=filepasser-frontend \
+	KEYCLOAK_REALM=finpasser \
+	KEYCLOAK_CLIENT_ID=finpasser-frontend \
 	npm run test:e2e || STATUS=$$?; \
 	popd >/dev/null; \
 	kill $$DEV_PID 2>/dev/null || true; wait $$DEV_PID 2>/dev/null || true; \
@@ -219,3 +220,11 @@ minio-reset:
 	$(DOCKER_COMPOSE) exec -T minio mc rm --recursive --force $(MINIO_ALIAS)/$(MINIO_BUCKET) || true
 	$(DOCKER_COMPOSE) exec -T minio mc rb --force $(MINIO_ALIAS)/$(MINIO_BUCKET) || true
 	$(DOCKER_COMPOSE) exec -T minio mc mb $(MINIO_ALIAS)/$(MINIO_BUCKET)
+
+# --------------------------------------------
+# INTERNAL UTILS
+# --------------------------------------------
+.PHONY: ensure-parent
+ensure-parent:
+	@echo "Ensuring finpasser parent POM is installed..."
+	@mvn -f $(PARENT_POM) -N install >/dev/null

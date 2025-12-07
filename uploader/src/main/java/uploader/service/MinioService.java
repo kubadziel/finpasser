@@ -12,16 +12,16 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class MinioService {
 
-    @Value("${filepasser.storage.bucket-name}")
+    @Value("${finpasser.storage.bucket-name}")
     private String bucketName;
 
-    @Value("${filepasser.storage.endpoint}")
+    @Value("${finpasser.storage.endpoint}")
     private String endpoint;
 
-    @Value("${filepasser.storage.access-key}")
+    @Value("${finpasser.storage.access-key}")
     private String accessKey;
 
-    @Value("${filepasser.storage.secret-key}")
+    @Value("${finpasser.storage.secret-key}")
     private String secretKey;
 
     private MinioClient minioClient;

@@ -6,9 +6,9 @@ const KEYCLOAK_URL =
   process.env.KEYCLOAK_PUBLIC_URL ??
   process.env.VITE_KEYCLOAK_URL ??
   "http://keycloak:8085";
-const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "filepasser";
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "finpasser";
 const KEYCLOAK_CLIENT_ID =
-  process.env.KEYCLOAK_CLIENT_ID ?? "filepasser-frontend";
+  process.env.KEYCLOAK_CLIENT_ID ?? "finpasser-frontend";
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const USERNAME = process.env.E2E_USER_EMAIL;
 const PASSWORD = process.env.E2E_USER_PASSWORD;

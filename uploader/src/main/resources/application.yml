@@ -27,7 +27,7 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_INTERNAL_ISSUER_URI:http://localhost:9999/realms/dev}
 
-filepasser:
+finpasser:
   storage:
     endpoint: ${MINIO_ENDPOINT}
     access-key: ${MINIO_ACCESS_KEY}

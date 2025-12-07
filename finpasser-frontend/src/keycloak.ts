@@ -10,8 +10,8 @@ const env = import.meta.env;
 
 const config: KeycloakConfig = {
   url: env.VITE_KEYCLOAK_URL ?? "http://keycloak:8085",
-  realm: env.VITE_KEYCLOAK_REALM ?? "filepasser",
-  clientId: env.VITE_KEYCLOAK_CLIENT_ID ?? "filepasser-frontend",
+  realm: env.VITE_KEYCLOAK_REALM ?? "finpasser",
+  clientId: env.VITE_KEYCLOAK_CLIENT_ID ?? "finpasser-frontend",
 };
 
 const keycloak = new Keycloak(config);
