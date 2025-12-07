@@ -5,13 +5,12 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version>
-        <relativePath/>
+        <groupId>finpasser</groupId>
+        <artifactId>finpasser</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>filepasser</groupId>
     <artifactId>uploader</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>uploader</name>
@@ -22,7 +21,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>filepasser</groupId>
+            <groupId>finpasser</groupId>
             <artifactId>shared-kafka-events</artifactId>
             <version>1.0.0</version>
         </dependency>
@@ -31,7 +30,7 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>filepasser</groupId>
+            <groupId>finpasser</groupId>
             <artifactId>shared-security</artifactId>
             <version>1.0.0</version>
         </dependency>

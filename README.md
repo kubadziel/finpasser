@@ -1,6 +1,6 @@
-# FilePasser
+# FinPasser
 
-**FilePasser** is a learning-oriented project designed to explore **microservice communication**, and **cloud integration** using modern technologies.
+**FinPasser** is a learning-oriented project designed to explore **microservice communication**, and **cloud integration** using modern technologies.
 
 The goal is to build an extendable ecosystem where different services can exchange, transform, and route financial ISO 20022 XML messages between clients, applications, and banks — with a focus on **performance, reliability, scalability, and secure access (Single Sign-On)**.
 
@@ -19,7 +19,7 @@ The goal is to build an extendable ecosystem where different services can exchan
 
 ## Current MVP: Router Application
 
-The first component in the FilePasser ecosystem is the **Router**, responsible for:
+The first component in the FinPasser ecosystem is the **Router**, responsible for:
 
 - Receiving financial messages (ISO 20022 XML) from clients
 - Validating and hashing incoming files
@@ -52,7 +52,7 @@ This serves as the foundation for adding further messages processing and routing
 - `uploader` &mdash; REST API that accepts uploads, stores files in MinIO, writes uploader DB entries, and emits Kafka events.
 - `router` &mdash; consumes upload events, persists router DB records, and produces acknowledgements.
 - `system-tests` &mdash; boots the real uploader + router apps with Postgres/Kafka/MinIO via Testcontainers to verify the full backend flow.
-- `filepasser-frontend` &mdash; React + Playwright UI that lets users submit files and inspect the JSON response.
+- `finpasser-frontend` &mdash; React + Playwright UI that lets users submit files and inspect the JSON response.
 
 ---
 
@@ -85,7 +85,7 @@ make up
 
 ### Frontend
 ```bash
-cd filepasser-frontend
+cd finpasser-frontend
 npm install
 npx playwright install --with-deps   # first run only
 npm run dev                          # serves http://localhost:5173

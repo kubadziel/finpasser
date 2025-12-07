@@ -22,7 +22,7 @@ const AppContent = () => {
                 <AppBar position="static">
                     <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography component={Link} to="/" variant="h6" color="inherit" sx={{ textDecoration: "none" }}>
-                            FilePasser
+                            FinPasser
                         </Typography>
                         <Box>
                             {authenticated && (

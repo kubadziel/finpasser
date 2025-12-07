@@ -24,7 +24,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import router.FilepasserRouterApplication;
+import router.RouterApplication;
 import uploader.UploaderApplication;
 
 import java.io.ByteArrayOutputStream;
@@ -163,7 +163,7 @@ class EndToEndUploadSystemTest {
         props.put("spring.kafka.consumer.properties.spring.json.trusted.packages", "shared.events");
         props.put("security.enabled", "false");
 
-        return new SpringApplicationBuilder(FilepasserRouterApplication.class)
+        return new SpringApplicationBuilder(RouterApplication.class)
                 .properties(props)
                 .run();
     }
@@ -179,10 +179,10 @@ class EndToEndUploadSystemTest {
         props.put("spring.kafka.bootstrap-servers", kafka.getBootstrapServers());
         props.put("spring.kafka.consumer.auto-offset-reset", "earliest");
         props.put("spring.kafka.consumer.properties.spring.json.trusted.packages", "shared.events");
-        props.put("filepasser.storage.endpoint", minio.getS3URL());
-        props.put("filepasser.storage.access-key", minio.getUserName());
-        props.put("filepasser.storage.secret-key", minio.getPassword());
-        props.put("filepasser.storage.bucket-name", TEST_BUCKET);
+        props.put("finpasser.storage.endpoint", minio.getS3URL());
+        props.put("finpasser.storage.access-key", minio.getUserName());
+        props.put("finpasser.storage.secret-key", minio.getPassword());
+        props.put("finpasser.storage.bucket-name", TEST_BUCKET);
         props.put("security.enabled", "false");
         props.put("keycloak.validation.enabled", "false");
 
